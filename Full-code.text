@@ -1,0 +1,1234 @@
+Folder name: vv content-restriction
+File: assets/css/ style.css
+Code:
+/* Plugin CSS */
+.locked-content {
+  background-color: #f7f7f7;
+  padding: 15px;
+  border: 1px dashed #999;
+  text-align: center;
+}
+
+
+/************* Login form *************/
+.cr-login-wrapper {
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.5s cubic-bezier(0, 0, 0.44, 1.18);
+  background-color: var(--bgcolor-white);
+  border-radius: var(--wd-brd-radius);
+  padding: 20px;
+  max-width: 400px;
+  /*margin: 30px auto;*/
+  font-family: Arial, sans-serif;
+}
+.cr-login-wrapper h3 {
+    margin-top: 0;
+    font-size: 20px;
+}
+.cr-login-wrapper p {
+    margin-bottom: 15px;
+}
+
+
+
+
+/************* locked-message *************/
+.vishal-content-locked-box {
+    /* max-width: 500px; */
+    margin: 40px auto;
+    padding: 20px;
+    text-align: center;
+    background-color: #fff;
+    border-top: 4px solid #00475a;
+    border-radius: 8px;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+
+.vishal-content-locked-box h2 {
+  font-size: 24px;
+  color: var(--wd-primary-color);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.vishal-content-locked-box p {
+  margin: 5px 0;
+  /* font-size: 16px; */
+  /* color: #222; */
+}
+
+/*
+.locked-login-btn {
+  display: inline-block;
+  margin: 20px auto;
+  padding: 10px 30px;
+  border: 2px solid #0a688d;
+  border-radius: 30px;
+  font-weight: bold;
+  color: #0a688d;
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+
+
+.register-text {
+  font-size: 14px;
+  color: #333;
+}
+*/
+
+.register-text a {
+  color: var(--wd-primary-color);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+
+
+
+
+/************* Payment Button Div *************/
+.payment-button-div {
+    padding: 5px 10px;
+}
+
+
+
+
+/************* Signup form *************/
+.cr-signup-wrapper {
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.5s cubic-bezier(0, 0, 0.44, 1.18);
+  background-color: var(--bgcolor-white);
+  border-radius: var(--wd-brd-radius);
+  padding: 20px;
+  max-width: 400px;
+  /*margin: 30px auto;*/
+  font-family: Arial, sans-serif;
+}
+.cr-signup-wrapper h3 {
+    margin-top: 0;
+    font-size: 20px;
+}
+.cr-signup-wrapper p {
+    margin-bottom: 15px;
+}
+
+span#togglePassword, span#toggleLoginPassword {
+    font-weight: bold;
+    color: var(--wd-primary-color);
+    font-size: smaller;
+}
+
+
+
+File: vv-content-restriction\assets\js\script.js
+COde:
+// Plugin JS
+console.log('Content Restriction plugin loaded.');
+
+//Sign Up form password show and hide
+const togglePassword = document.getElementById('togglePassword');
+    const passwordField = document.getElementById('cr_signup_password');
+
+    if (togglePassword && passwordField) {
+        togglePassword.addEventListener('click', function () {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.textContent = type === 'password' ? 'SHOW' : 'HIDE';
+        });
+    }
+
+
+//Login form password show and hide
+const toggleLoginPassword = document.getElementById('toggleLoginPassword');
+        const loginPasswordField = document.getElementById('cr_login_password');
+
+        if (toggleLoginPassword && loginPasswordField) {
+            toggleLoginPassword.addEventListener('click', function () {
+                const type = loginPasswordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                loginPasswordField.setAttribute('type', type);
+                this.textContent = type === 'password' ? 'SHOW' : 'HIDE';
+            });
+        }
+
+
+
+//Login Form Wrong Pass & User Arelt
+jQuery(document).ready(function($) {
+    $('#cr-login-form').on('submit', function(e) {
+        e.preventDefault();
+
+        $.ajax({
+            url: cr_ajax_object.ajax_url,
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                action: 'cr_user_login',
+                username: $('#user_login').val(),
+                password: $('#cr_login_password').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#cr-login-message').html('<div style="color:green;">' + response.data.message + '</div>');
+                    // Redirect if needed
+                    window.location.href = cr_ajax_object.redirect_url;
+                } else {
+                    $('#cr-login-message').html('<div style="color:red;">' + response.data.message + '</div>');
+                }
+            },
+            error: function() {
+                $('#cr-login-message').html('<div style="color:red;">Something went wrong. Please try again.</div>');
+            }
+        });
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+File: vv-content-restriction\includes\class-auth.php
+Code:
+<?php
+if (!defined('ABSPATH')) exit;
+
+class CR_Auth {
+
+    public function __construct() {
+        // AJAX for login
+        add_action('wp_ajax_cr_user_login', [$this, 'handle_login']);
+        add_action('wp_ajax_nopriv_cr_user_login', [$this, 'handle_login']);
+
+        // AJAX for registration
+        add_action('wp_ajax_cr_user_register', [$this, 'handle_registration']);
+        add_action('wp_ajax_nopriv_cr_user_register', [$this, 'handle_registration']);
+
+        // Load JS
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
+
+
+        // Block wp-login.php
+        add_action('init', [$this, 'block_wp_login']);
+    }
+
+    public function enqueue_scripts() {
+        wp_enqueue_script('cr-auth-js', plugins_url('../assets/js/script.js', __FILE__), ['jquery'], null, true);
+        wp_localize_script('cr-auth-js', 'cr_ajax_object', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'redirect_url' => home_url()
+        ]);
+    }
+
+
+
+
+    public function handle_login() {
+        $creds = [];
+        $creds['user_login']    = sanitize_user($_POST['username']);
+        $creds['user_password'] = $_POST['password'];
+        $creds['remember']      = true;
+
+        $user = wp_signon($creds, false);
+
+        if (is_wp_error($user)) {
+            // Stay on same page with error message
+            wp_send_json_error([
+                'message' => __('Invalid username or password.', 'cr')
+            ]);
+        } else {
+            // If subscriber/customer → redirect frontend
+            if (in_array('subscriber', $user->roles) || in_array('customer', $user->roles)) {
+                wp_send_json_success([
+                    'message'  => __('Login successful.', 'cr'),
+                    'redirect' => home_url('/login/') // ya custom dashboard ka URL
+                ]);
+            }
+
+            // Else normal users (editor/admin etc.)
+            wp_send_json_success([
+                'message'  => __('Login successful.', 'cr'),
+                'redirect' => admin_url()
+            ]);
+        }
+    }
+
+
+
+    public function block_wp_login() {
+        global $pagenow;
+        if ($pagenow === 'wp-login.php' && !is_user_logged_in()) {
+            wp_safe_redirect(home_url('/login/'));
+            exit;
+        }
+    }
+
+
+
+
+
+
+
+
+    public function handle_registration() {
+        $username = sanitize_user($_POST['username']);
+        $email = sanitize_email($_POST['email']);
+        $password = $_POST['password'];
+
+        if (username_exists($username) || email_exists($email)) {
+            wp_send_json_error(['message' => 'Username or email already exists.']);
+        }
+
+        $user_id = wp_create_user($username, $password, $email);
+
+        if (is_wp_error($user_id)) {
+            wp_send_json_error(['message' => 'Registration failed.']);
+        }
+
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id);
+        wp_send_json_success(['message' => 'Registration successful.']);
+    }
+}
+
+// Initialize auth handler
+new CR_Auth();
+
+
+
+
+
+
+
+
+
+
+
+File: vv-content-restriction\includes\class-handler.php
+COde:
+<?php
+if (!defined('ABSPATH')) exit;
+
+class CR_Handler {
+
+    /**
+     * Check if current user can access a premium post
+     *
+     * @param int $post_id
+     * @return bool
+     */
+    public static function can_access_premium($post_id) {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+
+        $user_id = get_current_user_id();
+
+        // Check membership
+        if (CR_Membership::is_member($user_id)) {
+            return true;
+        }
+
+        // Get viewed posts
+        $viewed_posts = get_user_meta($user_id, 'cr_viewed_posts', true);
+        if (!is_array($viewed_posts)) {
+            $viewed_posts = [];
+        }
+
+        // Already viewed this post
+        if (in_array($post_id, $viewed_posts)) {
+            return true;
+        }
+
+        // If already viewed 3 or more different posts
+        if (count($viewed_posts) >= 3) {
+            return false;
+        }
+
+        // Otherwise, allow access and track this post
+        $viewed_posts[] = $post_id;
+        update_user_meta($user_id, 'cr_viewed_posts', array_unique($viewed_posts));
+
+        return true;
+    }
+
+    /**
+     * Reset viewed post history for testing or admin use
+     */
+    public static function reset_user_views($user_id) {
+        delete_user_meta($user_id, 'cr_viewed_posts');
+    }
+
+    /**
+     * Get remaining free views
+     *
+     * @return int
+     */
+    public static function get_remaining_trial_views($user_id) {
+        $viewed_posts = get_user_meta($user_id, 'cr_viewed_posts', true);
+        if (!is_array($viewed_posts)) {
+            $viewed_posts = [];
+        }
+        return max(0, 3 - count($viewed_posts));
+    }
+
+    /**
+     * Handle signup form
+     */
+    public static function handle_signup_form() {
+        if (!isset($_POST['cr_signup_nonce']) || !wp_verify_nonce($_POST['cr_signup_nonce'], 'cr_signup_action')) {
+            return;
+        }
+
+        $username = sanitize_user($_POST['cr_signup_username']);
+        $email = sanitize_email($_POST['cr_signup_email']);
+        $password = $_POST['cr_signup_password'];
+
+        // Basic validation
+        if (empty($username) || empty($email) || empty($password)) {
+            wp_die('All fields are required.');
+        }
+
+        if (username_exists($username)) {
+            wp_die('Username already exists.');
+        }
+
+        if (email_exists($email)) {
+            wp_die('Email already exists.');
+        }
+
+        // Create user
+        $user_id = wp_create_user($username, $password, $email);
+
+        if (is_wp_error($user_id)) {
+            wp_die('Error creating user.');
+        }
+
+        // Log in the new user
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id);
+        //wp_redirect(home_url());
+        wp_redirect(add_query_arg('signup', 'success', wp_get_referer() ?: home_url()));
+        exit;
+    }
+
+    /**
+     * Hook into init to handle signup
+     */
+    public static function init() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cr_signup_submit'])) {
+            self::handle_signup_form();
+        }
+    }
+}
+
+add_action('init', ['CR_Handler', 'init']);
+
+
+
+
+
+// Add custom login redirect to my account page
+add_filter('login_redirect', function($redirect_to, $request, $user) {
+    if (isset($user->roles) && is_array($user->roles)) {
+        return site_url('/my-account');
+    }
+    return $redirect_to;
+}, 10, 3);
+
+
+
+// Remove admin bar on front end for non-admins
+/*
+add_action('after_setup_theme', function () {
+    if (!current_user_can('manage_options') && !is_admin()) {
+        show_admin_bar(false);
+    }
+});
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File:  vv-content-restriction\includes\class-membership.php
+COde:
+<?php
+if (!defined('ABSPATH')) exit;
+
+class CR_Membership {
+
+    public function __construct() {
+        // Handle form submission (basic POST handler, non-AJAX)
+        add_action('init', [$this, 'handle_membership_submission']);
+    }
+
+    /**
+     * Handle membership form submission
+     */
+    public function handle_membership_submission() {
+        if (isset($_POST['cr_buy_membership']) && is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            $duration = 365 * DAY_IN_SECONDS; // 1 year
+            $expiry_date = date('Y-m-d H:i:s', time() + $duration);
+
+            // Save to user meta
+            update_user_meta($user_id, 'cr_membership_expiry', $expiry_date);
+
+            // Insert into custom table
+            global $wpdb;
+            $table = $wpdb->prefix . 'content_restriction_payments';
+
+            $wpdb->insert($table, [
+                'user_id' => $user_id,
+                'transaction_id' => uniqid('txn_'),
+                'status' => 'success',
+                'expiry_date' => $expiry_date
+            ]);
+
+            wp_redirect(home_url('/membership-success')); // redirect after purchase
+            exit;
+        }
+    }
+
+    /**
+     * Static helper to check if user is active member
+     */
+    public static function is_member($user_id) {
+        $expiry = get_user_meta($user_id, 'cr_membership_expiry', true);
+        return $expiry && strtotime($expiry) > time();
+    }
+}
+
+// Initialize
+new CR_Membership();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File:  vv-content-restriction\includes\class-razorpay.php
+COde:
+<?php
+if (!defined('ABSPATH')) exit;
+
+require_once plugin_dir_path(__FILE__) . 'razorpay/Razorpay.php';
+
+use Razorpay\Api\Api;
+
+class CR_Razorpay {
+
+    //private $api_key = 'rzp_test_kOT2liOKoiWTlm'; // Replace with your test/live Razorpay Key ID ORI: rzp_live_XViAOdH4Y1tElZ // TEST: rzp_test_kOT2liOKoiWTlm
+    //private $api_secret = 'pXDY1rN1B2J2elPWmgboZFXp'; // Replace with your Razorpay Secret Key ORI: 2lQmh4R9mTQOE241zf59Hik5 // TEST: pXDY1rN1B2J2elPWmgboZFXp
+    private $api_key;
+    private $api_secret;
+
+
+    public function __construct() {
+        $this->api_key = defined('RAZORPAY_KEY_ID') ? RAZORPAY_KEY_ID : '';
+        $this->api_secret = defined('RAZORPAY_SECRET') ? RAZORPAY_SECRET : '';
+
+
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_razorpay_js']);
+        add_action('wp_ajax_cr_create_order', [$this, 'create_order']);
+        add_action('wp_ajax_nopriv_cr_create_order', [$this, 'create_order']);
+        add_action('wp_ajax_cr_razorpay_verify', [$this, 'verify_payment']);
+    }
+
+    public function enqueue_razorpay_js() {
+        wp_enqueue_script('razorpay-checkout', 'https://checkout.razorpay.com/v1/checkout.js', [], null, true);
+    }
+
+    public function create_order() {
+        $api = new Api($this->api_key, $this->api_secret);
+
+        $user = wp_get_current_user();
+        $orderData = [
+            'receipt'         => uniqid(),
+            'amount'          => 236000, // in paise (499.00 INR)
+            'currency'        => 'INR',
+            'payment_capture' => 1
+        ];
+
+        $razorpayOrder = $api->order->create($orderData);
+
+        wp_send_json_success([
+            'id' => $razorpayOrder['id'],
+            'amount' => $razorpayOrder['amount'],
+            'currency' => $razorpayOrder['currency'],
+            'name' => $user->display_name,
+            'email' => $user->user_email
+        ]);
+    }
+
+
+    // Verify Payment
+    public function verify_payment() {
+        $payment_id = $_POST['razorpay_payment_id'];
+        $order_id = $_POST['razorpay_order_id'];
+        $signature = $_POST['razorpay_signature'];
+
+        $generated_signature = hash_hmac('sha256', $order_id . "|" . $payment_id, $this->api_secret);
+
+        if ($generated_signature === $signature && is_user_logged_in()) {
+            $user_id = get_current_user_id();
+            $expiry_date = date('Y-m-d H:i:s', strtotime('+1 year'));
+
+            // Save user meta
+            update_user_meta($user_id, 'cr_membership_expiry', $expiry_date);
+
+            // Save in DB
+            global $wpdb;
+            $wpdb->insert($wpdb->prefix . 'content_restriction_payments', [
+                'user_id' => $user_id,
+                'transaction_id' => $payment_id,
+                'status' => 'success',
+                'expiry_date' => $expiry_date
+            ]);
+
+            wp_send_json_success(['message' => 'Payment verified.']);
+        } else {
+            wp_send_json_error(['message' => 'Invalid signature.']);
+        }
+    }
+
+
+
+
+}
+new CR_Razorpay();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File: vv-content-restriction\includes\class-shortcodes.php
+Code:
+<?php
+if (!defined('ABSPATH')) exit;
+
+class CR_Shortcodes {
+
+    public function __construct() {
+        add_shortcode('pre', [$this, 'handle_pre_shortcode']);
+        add_shortcode('content_login_form', [$this, 'handle_login_form_shortcode']);
+        add_shortcode('membership_form', [$this, 'handle_membership_form_shortcode']);
+        add_shortcode('signup_form', [$this, 'handle_signup_form_shortcode']);
+        add_shortcode('cr_my_account', [$this, 'render_my_account']);
+    }
+
+    // [cr_my_account]
+    public function render_my_account() {
+        ob_start();
+        include plugin_dir_path(__FILE__) . '../templates/my-account.php';
+        return ob_get_clean();
+    }
+
+
+    // [pre]...[/pre] → Premium Content Lock
+    public function handle_pre_shortcode($atts, $content = null) {
+        if (!is_user_logged_in()) {
+            ob_start();
+            include CR_PLUGIN_PATH . 'templates/locked-message.php';
+            return ob_get_clean();
+        }
+
+        $user_id = get_current_user_id();
+        if ($this->user_has_membership($user_id)) {
+            return do_shortcode($content);
+        }
+
+        $viewed_posts = $this->get_user_viewed_posts($user_id);
+        $post_id = get_the_ID();
+
+        if (!in_array($post_id, $viewed_posts)) {
+            if (count($viewed_posts) >= 3) {
+                return '<div class="locked-content"><p>You have read your 3 free premium posts.</p><a href="/subscription-plan/">Join our online-library membership now</a></div>';
+            }
+            $viewed_posts[] = $post_id;
+            update_user_meta($user_id, 'cr_viewed_posts', $viewed_posts);
+        }
+
+        return do_shortcode($content);
+    }
+
+    // [content_login_form]
+    public function handle_login_form_shortcode($atts, $content = null) {
+        ob_start();
+        include CR_PLUGIN_PATH . 'templates/login-form.php';
+        return ob_get_clean();
+    }
+
+    // [membership_form]
+    public function handle_membership_form_shortcode($atts, $content = null) {
+        ob_start();
+        include CR_PLUGIN_PATH . 'templates/membership-form.php';
+        return ob_get_clean();
+    }
+
+    // [signup_form]
+    public function handle_signup_form_shortcode($atts, $content = null) {
+        ob_start();
+        include CR_PLUGIN_PATH . 'templates/signup-form.php';
+        return ob_get_clean();
+    }
+
+    private function get_user_viewed_posts($user_id) {
+        $viewed = get_user_meta($user_id, 'cr_viewed_posts', true);
+        return is_array($viewed) ? $viewed : [];
+    }
+
+    private function user_has_membership($user_id) {
+        $expiry = get_user_meta($user_id, 'cr_membership_expiry', true);
+        if (!$expiry) return false;
+
+        return strtotime($expiry) > time();
+    }
+}
+
+// Initialize shortcodes
+new CR_Shortcodes();
+
+
+
+
+
+
+
+File:  vv-content-restriction\includes\install.php
+CODE:
+<?php
+class CR_Install {
+    public static function activate() {
+        global $wpdb;
+        $charset_collate = $wpdb->get_charset_collate();
+
+        $table_users = $wpdb->prefix . 'content_restriction_users';
+        $table_payments = $wpdb->prefix . 'content_restriction_payments';
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        $sql_users = "CREATE TABLE $table_users (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            viewed_posts LONGTEXT,
+            membership_expiry DATETIME DEFAULT NULL
+        ) $charset_collate;";
+
+        $sql_payments = "CREATE TABLE $table_payments (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            transaction_id VARCHAR(100),
+            status VARCHAR(20),
+            expiry_date DATETIME
+        ) $charset_collate;";
+
+        dbDelta($sql_users);
+        dbDelta($sql_payments);
+    }
+}
+
+
+
+
+
+
+
+
+
+Directorey: vv-content-restriction\includes\razorpay\<_-----Ye folder Razorpay SDK ka hai.
+
+
+
+
+
+
+
+
+
+
+File:E: vv-content-restriction\templates\locked-message.php
+COde:
+<?php if (!defined('ABSPATH')) exit; ?>
+
+
+
+
+
+
+
+<div class="vishal-content-locked-box">
+  <h2>This content is locked 🔒</h2>
+  <p class="register-text">For Read 3 Premium Articles Free, Just <a href="/register/">Login</a> or <a href="/register">Register</a></p>
+  <p>Subscribe a plan To Unlock All The Premium Content!</p>
+  <p><a href="/register/" title="" target="_blank" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-small btn-full-width">Join Now</a></p>
+</div>
+
+
+
+
+
+
+
+
+<!--
+<div class="cr-locked-message">
+    <p>This content is for premium users only.</p>
+    <p><a href="/register/">Login</a> or <a href="/register">Register</a> to continue.</p>
+    <p>Or <a href="/subscription-plan/">Join our online-library membership</a> to unlock all premium content.</p>
+</div>
+-->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File:  vv-content-restriction\templates\login-form.php
+COde:
+<?php
+if (!defined('ABSPATH')) exit;
+
+if (is_user_logged_in()) {
+    ?>
+    <div class="cr-login-wrapper">
+        <h3>You are already logged in</h3>
+        <p>You are already logged in to your account.</p>
+        <a href="<?php echo site_url('/my-account'); ?>" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-small">Go to My Account</a>
+    </div>
+    <?php
+    return;
+}
+
+$redirect_url = isset($args['redirect_to']) ? esc_url($args['redirect_to']) : esc_url(home_url($_SERVER['REQUEST_URI']));
+?>
+
+<div class="cr-login-wrapper">
+    <h3>Welcome Back</h3>
+    <p>You need to be logged in to access this premium content.</p>
+
+    <!--<form name="loginform" id="loginform" action="<?php echo esc_url(wp_login_url()); ?>" method="post">-->
+    <form name="loginform" id="cr-login-form" method="post">
+        <p>
+            <label for="user_login">Email or Username</label>
+            <input type="text" name="log" id="user_login" class="input" required />
+        </p>
+
+        <p>
+            <label for="user_pass">Password</label>
+            <div style="position: relative;">
+                <input type="password" name="pwd" id="cr_login_password" class="input" required style="padding-right: 40px;">
+                <span id="toggleLoginPassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;">SHOW</span>
+            </div>
+        </p>
+
+        <p class="forgetmenot">
+            <label><input name="rememberme" type="checkbox" value="forever" /> Remember Me</label>
+        </p>
+
+        <p>
+            <input type="submit" name="wp-submit" id="wp-submit" class="btn btn-color-primary" value="Login" />
+            <input type="hidden" name="redirect_to" value="<?php echo esc_url($redirect_url); ?>" />
+        </p>
+
+        <p>
+            <a href="<?php echo wp_lostpassword_url(); ?>">Forgot your password?</a>
+            |
+            <a href="<?php echo site_url('/registration'); ?>">Register</a>
+        </p>
+
+        <div id="cr-login-message"></div> <!-- 👈 yaha error/success dikhega -->
+        
+    </form>
+
+    
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File: vv-content-restriction\templates\membership-form.php
+Code:
+<?php if (!defined('ABSPATH')) exit; ?>
+
+<?php if (is_user_logged_in()): ?>
+    <div class="payment-button-div text-center">
+        <p>Click the button below to pay and activate your membership.</p>
+        <button id="cr-pay-btn" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-small">Buy Now</button>
+</div>
+
+    <script>
+    document.getElementById('cr-pay-btn').addEventListener('click', function () {
+        fetch('<?php echo admin_url('admin-ajax.php'); ?>?action=cr_create_order')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return alert('Error creating order');
+
+            var options = {
+                /* "key": "<?php echo 'rzp_test_kOT2liOKoiWTlm'; ?>", // ORIGINAL KEY: rzp_live_XViAOdH4Y1tElZ Razorpay key  //TEST KEY: rzp_test_kOT2liOKoiWTlm */
+                "key": "<?php echo defined('RAZORPAY_KEY_ID') ? RAZORPAY_KEY_ID : ''; ?>",
+                "amount": data.data.amount,
+                "currency": data.data.currency,
+                "name": "Library Membership",
+                "description": "Premium Access for 1 Year",
+                "order_id": data.data.id,
+                "handler": function (response) {
+                    // Post to server to validate and activate
+                    fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({
+                            action: 'cr_razorpay_verify',
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature
+                        })
+                    }).then(r => r.json()).then(res => {
+                        if (res.success) {
+                            window.location.href = '<?php echo home_url('/thank-you'); ?>';
+                        } else {
+                            alert('Payment verification failed');
+                        }
+                    });
+                }
+            };
+            new Razorpay(options).open();
+        });
+    });
+    </script>
+<?php else: ?>
+    <div class="payment-button-div text-center">
+        <p>You must be logged in to purchase membership.</p>
+        <a href="/login/" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-small">Login</a>
+    </div>
+<?php endif; ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File:  vv-content-restriction\templates\my-account.php
+COde:
+<?php if (!defined('ABSPATH')) exit; ?>
+
+<?php if (is_user_logged_in()): 
+    $current_user = wp_get_current_user();
+    $user_id = $current_user->ID;
+
+    global $wpdb;
+    $table = $wpdb->prefix . 'content_restriction_payments';
+
+    // Get all membership records for this user
+    $memberships = $wpdb->get_results(
+        $wpdb->prepare("SELECT * FROM $table WHERE user_id = %d ORDER BY expiry_date DESC", $user_id)
+    );
+?>
+
+<div class="my-account">
+    <h2>Welcome, <?php echo esc_html($current_user->display_name); ?>!</h2>
+    <p><strong>Email:</strong> <?php echo esc_html($current_user->user_email); ?></p>
+    <p><strong>Username:</strong> <?php echo esc_html($current_user->user_login); ?></p>
+    <p><a href="<?php echo esc_url(wp_logout_url(home_url())); ?>">Logout</a></p>
+
+    <hr>
+
+    <h3>Your Membership(s)</h3>
+
+    <?php if (!empty($memberships)): ?>
+        <table class="cr-membership-table" style="width:100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="border:1px solid #ccc; padding: 8px;">Name</th>
+                    <th style="border:1px solid #ccc; padding: 8px;">Transaction ID</th>
+                    <th style="border:1px solid #ccc; padding: 8px;">Status</th>
+                    <th style="border:1px solid #ccc; padding: 8px;">Expiry Date</th>
+                    <th style="border:1px solid #ccc; padding: 8px;">Current?</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($memberships as $membership): 
+                    $is_active = strtotime($membership->expiry_date) > time();
+                ?>
+                    <tr>
+                        <td style="border:1px solid #ccc; padding: 8px;">Online Library Membership</td>
+                        <td style="border:1px solid #ccc; padding: 8px;"><?php echo esc_html($membership->transaction_id); ?></td>
+                        <td style="border:1px solid #ccc; padding: 8px;"><?php echo esc_html(ucfirst($membership->status)); ?></td>
+                        <td style="border:1px solid #ccc; padding: 8px;"><?php echo date('F j, Y', strtotime($membership->expiry_date)); ?></td>
+                        <td style="border:1px solid #ccc; padding: 8px;">
+                            <?php echo $is_active ? '<span style="color:green;">Yes</span>' : '<span style="color:red;">Expired</span>'; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p>You have not purchased any memberships yet.</p>
+    <?php endif; ?>
+</div>
+
+<?php else: ?>
+    <div class="cr-signup-wrapper">
+        <h3>You must be logged in to check your account</h3>
+        <p>You are not logged in.</p>
+        <a href="<?php echo site_url('/login'); ?>" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-small">Login</a>
+    </div>
+<?php endif; ?>
+
+
+
+
+
+
+
+
+
+
+
+
+File:  vv-content-restriction\templates\signup-form.php
+COde: 
+<?php if (!defined('ABSPATH')) exit; ?>
+
+<?php if (is_user_logged_in()): ?>
+    <div class="cr-signup-wrapper">
+        <h3>You are already logged in</h3>
+        <p>You are already logged in to your account.</p>
+        <a href="<?php echo site_url('/my-account'); ?>" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-small">Go to My Account</a>
+    </div>
+    <?php
+    return;?>
+
+<?php else: ?>
+    <div class="cr-signup-wrapper">
+    <h2>Sign Up</h2>
+    <form method="post" class="cr-signup-form">
+        <?php if (!empty($_GET['signup']) && $_GET['signup'] === 'success'): ?>
+            <p class="success-msg">Signup successful. You can now <a href="/login">login</a>.</p>
+        <?php elseif (!empty($_GET['signup']) && $_GET['signup'] === 'error'): ?>
+            <p class="error-msg"><?php echo esc_html($_GET['message'] ?? 'Signup failed. Please try again.'); ?></p>
+        <?php endif; ?>
+
+        <p>
+            <label for="cr_signup_username">Username</label>
+            <input type="text" name="cr_signup_username" id="cr_signup_username" required>
+        </p>
+
+        <p>
+            <label for="cr_signup_email">Email</label>
+            <input type="email" name="cr_signup_email" id="cr_signup_email" required>
+        </p>
+
+        <!--
+        <p>
+            <label for="cr_signup_password">Password</label>
+            <input type="password" name="cr_signup_password" id="cr_signup_password" required>
+        </p>
+        -->
+
+        <p>
+            <label for="cr_signup_password">Password</label>
+            <div style="position: relative;">
+                <input type="password" name="cr_signup_password" id="cr_signup_password" required style="padding-right: 40px;">
+                <span id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer;">SHOW</span>
+            </div>
+        </p>
+
+
+
+        <?php wp_nonce_field('cr_signup_action', 'cr_signup_nonce'); ?>
+
+        <p>
+            <input type="submit" class="btn btn-color-primary btn-style-default btn-shape-semi-round btn-size-extra-default" name="cr_signup_submit" value="Sign Up">
+        </p>
+
+        <p>
+            <a href="<?php echo site_url('/login'); ?>"> Back to login</a>
+        </p>
+    </form>
+    </div>
+<?php endif; ?>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+File: vv-content-restriction\content-restriction.php
+Code:
+<?php
+/*
+Plugin Name: Content Restriction
+Description: Restrict content using shortcodes and provide membership system.
+Version: 1.0
+Author: Vishal Verma
+*/
+
+if (!defined('ABSPATH')) exit;
+
+define('CR_PLUGIN_PATH', plugin_dir_path(__FILE__));
+
+require_once CR_PLUGIN_PATH . 'includes/install.php';
+require_once CR_PLUGIN_PATH . 'includes/class-shortcodes.php';
+require_once CR_PLUGIN_PATH . 'includes/class-auth.php';
+require_once CR_PLUGIN_PATH . 'includes/class-membership.php';
+require_once CR_PLUGIN_PATH . 'includes/class-handler.php';
+
+
+
+
+//razorpay
+require_once CR_PLUGIN_PATH . 'includes/class-razorpay.php';
+
+
+
+
+register_activation_hook(__FILE__, ['CR_Install', 'activate']);
+register_uninstall_hook(__FILE__, 'cr_uninstall_plugin');
+
+function cr_uninstall_plugin() {
+    global $wpdb;
+    $table = $wpdb->prefix . 'content_restriction_users';
+    $wpdb->query("DROP TABLE IF EXISTS $table");
+}
+
+
+
+/*add css and js*/
+add_action('wp_enqueue_scripts', 'cr_enqueue_assets');
+function cr_enqueue_assets() {
+    wp_enqueue_style('cr-style', plugin_dir_url(__FILE__) . 'assets/css/style.css');
+    wp_enqueue_script('cr-script', plugin_dir_url(__FILE__) . 'assets/js/script.js', array('jquery'), '1.0.0', true);
+}
+
+
+
+
+
+
+
+
+File:  plugins\vv-content-restriction\uninstall.php
+Code:
+<?php
+if (!defined('WP_UNINSTALL_PLUGIN')) exit;
+
+global $wpdb;
+$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}content_restriction_users");
+$wpdb->query("DROP TABLE IF EXISTS {$wpdb->prefix}content_restriction_payments");
+
+
+
+
+
+
+
+
+

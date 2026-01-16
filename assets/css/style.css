@@ -1,0 +1,146 @@
+/* Plugin CSS */
+.locked-content {
+  /* background-color: #f7f7f7;
+  padding: 15px;
+  border: 1px dashed #999;
+  text-align: center; */
+
+
+  margin: 40px auto;
+  padding: 20px;
+  text-align: center;
+  background-color: #fff;
+  border-top: 4px solid #00475a;
+  border-radius: 8px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+
+
+/************* Login form *************/
+.cr-login-wrapper {
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.5s cubic-bezier(0, 0, 0.44, 1.18);
+  background-color: var(--bgcolor-white);
+  border-radius: var(--wd-brd-radius);
+  padding: 20px;
+  max-width: 400px;
+  /*margin: 30px auto;*/
+  font-family: var(--wd-text-font);
+}
+.cr-login-wrapper h3 {
+    margin-top: 0;
+    font-size: 20px;
+}
+.cr-login-wrapper p {
+    margin-bottom: 20px;
+}
+
+
+
+
+/************* locked-message *************/
+.vishal-content-locked-box {
+    /* max-width: 500px; */
+    font-family: 'Poppins';
+    font-size: 18px;
+    margin: 40px auto;
+    padding: 20px;
+    /*text-align: center;*/
+    background-color: #fff;
+    border-top: 4px solid #00475a;
+    border-radius: 8px;
+    box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+    gap: 20px;
+    display: grid;
+}
+
+
+.vishal-content-locked-box strong {
+    font-size: 20px;
+    color: var(--wd-primary-color);
+}
+
+.vishal-content-locked-box p {
+    margin-bottom: 0px;
+}
+
+/*
+.locked-login-btn {
+  display: inline-block;
+  margin: 20px auto;
+  padding: 10px 30px;
+  border: 2px solid #0a688d;
+  border-radius: 30px;
+  font-weight: bold;
+  color: #0a688d;
+  text-decoration: none;
+  transition: 0.3s ease;
+}
+
+
+.register-text {
+  font-size: 14px;
+  color: #333;
+}
+*/
+
+.register-text a {
+  color: var(--wd-primary-color);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+
+
+
+
+/************* Payment Button Div *************/
+.payment-button-div {
+    padding: 5px 10px;
+    display: grid;
+    gap: inherit;
+}
+
+
+
+
+/************* Signup form *************/
+.cr-signup-wrapper {
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.12);
+  transition: box-shadow 0.5s cubic-bezier(0, 0, 0.44, 1.18);
+  background-color: var(--bgcolor-white);
+  border-radius: var(--wd-brd-radius);
+  padding: 20px;
+  max-width: 400px;
+  /*margin: 30px auto;*/
+  font-family: var(--wd-text-font);
+}
+.cr-signup-wrapper h3 {
+    margin-top: 0;
+    font-size: 20px;
+}
+.cr-signup-wrapper p {
+    margin-bottom: 15px;
+}
+
+span#togglePassword, span#toggleLoginPassword {
+    font-weight: bold;
+    color: var(--wd-primary-color);
+    font-size: smaller;
+}
+
+
+
+
+
+
+
+
+
+
+/************* Login toggle button *************/
+span.cr-welcome {
+    color: var(--wd-alternative-color);
+    vertical-align: middle;
+}
