@@ -2,7 +2,7 @@
 /*
 Plugin Name: VV Content Restriction
 Description: Restrict content using shortcodes and provide membership system.
-Version: 1.0.3
+Version: 1.0.4
 Author: Vishal Verma
 */
 
